@@ -1,10 +1,13 @@
+from typing import List
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.models.charity_project import CharityProject
-from app.schemas.charity_project import (CharityProjectCreate,
-                                         CharityProjectUpdate)
-from typing import List
+from app.schemas.charity_project import (
+    CharityProjectCreate,
+    CharityProjectUpdate,
+)
 
 
 class CharityProjectCRUD:
@@ -63,16 +66,22 @@ class CharityProjectCRUD:
         return db_obj
 
     async def get_projects_by_completion_rate(
-        session: AsyncSession
+        self, session: AsyncSession
     ) -> List[CharityProject]:
-        """Получить закрытые проекты, отсортированные по скорости сбора средств."""
+        """Получить закрытые проекты"""
         projects = await session.execute(
-            select(CharityProject).where(
-                CharityProject.fully_invested == True
-            ).order_by(
-                CharityProject.close_date - CharityProject.create_date
-            )
+            select(CharityProject)
+            .where(CharityProject.fully_invested is True)
+            .order_by(CharityProject.close_date - CharityProject.create_date)
         )
         return projects.scalars().all()
 
+
 charity_project_crud = CharityProjectCRUD()
+
+
+async def get_projects_by_completion_rate(
+    session: AsyncSession,
+) -> List[CharityProject]:
+    """Получить закрытые проекты, отсортированные по скорости сбора средств."""
+    return await charity_project_crud.get_projects_by_completion_rate(session)
