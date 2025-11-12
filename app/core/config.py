@@ -28,4 +28,43 @@ class Settings(BaseSettings):
         env_file = ".env"
 
 
+class GoogleConstants:
+    """Константы для работы с Google API."""
+
+    DATETIME_FORMAT = "%Y/%m/%d %H:%M:%S"
+
+    RANGE = "A1:D30"
+
+    SPREADSHEET_BODY = {
+        "properties": {
+            "title": "Отчет по закрытым проектам",
+            "locale": "ru_RU",
+        },
+        "sheets": [
+            {
+                "properties": {
+                    "sheetType": "GRID",
+                    "sheetId": 0,
+                    "title": "Закрытые проекты",
+                    "gridProperties": {"rowCount": 100, "columnCount": 4},
+                }
+            }
+        ],
+    }
+
+    UPDATE_BODY_BASE = {"majorDimension": "ROWS"}
+
+    TABLE_HEADERS = [
+        ["Отчет по закрытым проектам"],
+        ["Топ проектов по скорости сборов"],
+        [
+            "Название проекта",
+            "Время сбора (дней)",
+            "Описание",
+            "Собрано средств",
+        ],
+    ]
+
+
 settings = Settings()
+google_constants = GoogleConstants()

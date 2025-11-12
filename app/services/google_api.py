@@ -1,43 +1,23 @@
 from typing import List
-
 from aiogoogle import Aiogoogle
 
-from app.core.config import settings
+from app.core.config import settings, google_constants
 from app.models.charity_project import CharityProject
-
-FORMAT = "%Y/%m/%d %H:%M:%S"
 
 
 async def spreadsheets_create(wrapper_services: Aiogoogle) -> str:
     """Создать новую Google таблицу."""
     service = await wrapper_services.discover("sheets", "v4")
 
-    spreadsheet_body = {
-        "properties": {
-            "title": "Отчет по закрытым проектам",
-            "locale": "ru_RU",
-        },
-        "sheets": [
-            {
-                "properties": {
-                    "sheetType": "GRID",
-                    "sheetId": 0,
-                    "title": "Закрытые проекты",
-                    "gridProperties": {"rowCount": 100, "columnCount": 4},
-                }
-            }
-        ],
-    }
-
     response = await wrapper_services.as_service_account(
-        service.spreadsheets.create(json=spreadsheet_body)
+        service.spreadsheets.create(json=google_constants.SPREADSHEET_BODY)
     )
-    spreadsheetid = response["spreadsheetId"]
-    return spreadsheetid
+    spreadsheet_id = response["spreadsheetId"]
+    return spreadsheet_id
 
 
 async def set_user_permissions(
-    spreadsheetid: str, wrapper_services: Aiogoogle
+    spreadsheet_id: str, wrapper_services: Aiogoogle
 ) -> None:
     """Выдать права на доступ к таблице."""
     service = await wrapper_services.discover("drive", "v3")
@@ -50,29 +30,20 @@ async def set_user_permissions(
 
     await wrapper_services.as_service_account(
         service.permissions.create(
-            fileId=spreadsheetid, json=permissions_body, fields="id"
+            fileId=spreadsheet_id, json=permissions_body, fields="id"
         )
     )
 
 
 async def spreadsheets_update_value(
-    spreadsheetid: str,
+    spreadsheet_id: str,
     projects: List[CharityProject],
-    wrapper_services: Aiogoogle,
+    wrapper_services: Aiogoogle
 ) -> None:
     """Обновить данные в таблице."""
     service = await wrapper_services.discover("sheets", "v4")
 
-    table_values = [
-        ["Отчет по закрытым проектам"],
-        ["Топ проектов по скорости сборов"],
-        [
-            "Название проекта",
-            "Время сбора (дней)",
-            "Описание",
-            "Собрано средств",
-        ],
-    ]
+    table_values = google_constants.TABLE_HEADERS.copy()
 
     for project in projects:
         collection_time = (project.close_date - project.create_date).days
@@ -85,12 +56,12 @@ async def spreadsheets_update_value(
             ]
         )
 
-    update_body = {"majorDimension": "ROWS", "values": table_values}
+    update_body = {**google_constants.UPDATE_BODY_BASE, "values": table_values}
 
     await wrapper_services.as_service_account(
         service.spreadsheets.values.update(
-            spreadsheetId=spreadsheetid,
-            range="A1:D30",
+            spreadsheetId=spreadsheet_id,
+            range=google_constants.RANGE,
             valueInputOption="USER_ENTERED",
             json=update_body,
         )
